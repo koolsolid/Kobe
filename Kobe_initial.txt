@@ -62,3 +62,17 @@ group_by(minutes_remaining)
 summarise(shot_made_flag = mean(shot_made_flag), count = n(), sd = sqrt(shot_made_flag * (1 - shot_made_flag) / count))
 filter(count > 100)
 ggplot(aes(x = minutes_remaining, y = shot_made_flag, ymax = shot_made_flag + 1.96 * sd, ymin = shot_made_flag - 1.96 * sd )) + geom_line()
+
+
+# check the correlation
+
+library(corrplot)
+corrplot(cor(kobe), method="ellipse")
+
+
+# Split the dataset
+rn_train <- sample(nrow(kobe), floor(nrow(kobe)*0.8))
+train <- kobe[rn_train,]
+test <- kobe[-rn_train,]
+
+

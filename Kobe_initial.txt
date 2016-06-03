@@ -1,0 +1,64 @@
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+library(lubridate)
+library(magrittr)
+library(pander)
+library(plotly)
+library(readr)
+library(stringr)
+
+
+#Import Kaggle data
+kobe <- read_csv("C:/Users/Vince/Desktop/CMTH136/Kobe/data.csv", sep=",")
+summary(kobe)
+
+
+# plot the Field goal % by year
+kobe
+mutate(year = year(game_date)) 
+group_by(year)
+summarise(shot_made_flag = mean(shot_made_flag, na.rm = TRUE), sd = sqrt(shot_made_flag * (1 - shot_made_flag) / n()) )
+ggplot(aes(x = year, y = shot_made_flag, ymax = shot_made_flag + 1.96 * sd, ymin = shot_made_flag - 1.96 * sd)) + geom_line() + geom_point() + geom_errorbar() + xlab("Year") +  ylab("Field goal means ")
+
+
+# Check the shot made by year
+kobe
+filter(is.na(shot_made_flag))
+group_by(year = year(game_date))
+summarise(count = n())
+ggplot(aes(x = year, y = count)) + geom_line() + geom_point()
+
+
+# See the relationship of shot_zone_range by shot_made and count
+kobe
+filter(!is.na(shot_made_flag))
+group_by(shot_zone_range)
+summarise(shot_made_flag = mean(shot_made_flag), count = n() )
+pander
+
+
+# see the relationship between action_type & shot_made_flag
+kobe
+filter(!is.na(shot_made_flag))
+group_by(action_type)
+summarise(shot_made_flag = mean(shot_made_flag), count = n() )
+ggplot(aes(x = action_type, y = shot_made_flag)) +  geom_point() +  theme(axis.text.x = element_text(angle = 90))
+
+
+# see the relationship between opponent & shot_made_flag
+kobe
+filter(!is.na(shot_made_flag))
+group_by(opponent) 
+summarise(shot_made_flag = mean(shot_made_flag), count = n(), sd = sqrt(shot_made_flag * (1 - shot_made_flag) / count))
+ggplot(aes(x = opponent, y = shot_made_flag, ymax = shot_made_flag + 1.96 * sd, ymin = shot_made_flag - 1.96 * sd) ) + geom_point() + geom_errorbar() + geom_hline(yintercept = mean(kobe$shot_made_flag, na.rm = TRUE), color = "red") + theme(axis.text.x = element_text(angle = 90))
+
+
+# check the relationship between minutes_remaining & shot_made_flag
+
+kobe
+filter(!is.na(shot_made_flag))
+group_by(minutes_remaining)
+summarise(shot_made_flag = mean(shot_made_flag), count = n(), sd = sqrt(shot_made_flag * (1 - shot_made_flag) / count))
+filter(count > 100)
+ggplot(aes(x = minutes_remaining, y = shot_made_flag, ymax = shot_made_flag + 1.96 * sd, ymin = shot_made_flag - 1.96 * sd )) + geom_line()

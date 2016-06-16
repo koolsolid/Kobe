@@ -82,8 +82,7 @@ library("e1071") # may be needed for caret
 formula_text <- paste(names(kobe)[15] ,"~", paste(names(kobe[c(2,19,24,17)]), collapse="+") )
 formula <- as.formula(formula_text)
 
-#  Create a logistic regression model
-fit <- glm(formula,data=kobe,family=binomial())
+
 
 #split the data
 final_test <- kobe[is.na(kobe$shot_made_flag),]
@@ -94,8 +93,10 @@ test <- kobe[-rn_train,]
 
 train$shot_made_flag <- as.factor(train$shot_made_flag)
 
+#  Create a logistic regression model
+fit <- glm(formula,data=kobe,family=binomial())
+
 # Check the performance of the logistic regression model and show ROC curve and confusion matrix.
-fit <- lm(formula, data=train)
 test$scores <- predict(fit, type="response", newdata=test)
 
 pred<-prediction(test$scores, test$shot_made_flag)

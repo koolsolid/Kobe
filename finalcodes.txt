@@ -1,0 +1,111 @@
+#Import Kaggle data
+
+kobe <- read.csv("C:/Users/Vince/Desktop/CKME136/Kobe/data.csv", sep=",")
+
+summary(kobe)
+
+getwd()
+
+kobe %>% 
+  mutate(year = year(game_date)) %>%
+  group_by(year) %>%
+  summarise(shot_made_flag = mean(shot_made_flag, na.rm = TRUE),
+            sd = sqrt(shot_made_flag * (1 - shot_made_flag) / n())
+           ) %>%
+  ggplot(aes(x = year,
+             y = shot_made_flag,
+             ymax = shot_made_flag + 1.96 * sd,
+             ymin = shot_made_flag - 1.96 * sd)
+        ) +
+  geom_line() +
+  geom_point() +
+  geom_errorbar() +
+  xlab("Year") + 
+  ylab("Mean of hits")
+
+
+# create a function to calculate accuracy
+pplot <- function(feat) {
+  feat <- substitute(feat)
+  ggplot(data = train , aes_q(x = feat)) +
+    geom_bar(aes(fill = shot_made_flag), stat = "count", position = "fill") +
+    scale_fill_brewer(palette = "Set1", direction = -1) +
+    ggtitle(paste("accuracy by", feat))
+}
+
+
+# group less frequent action_type to "Other"
+kobe %>% count(action_type) %>%
+    arrange(desc(n)) %>% filter(n < 20) -> actions
+kobe$action_type[kobe$action_type %in% actions$action_type] <- "Other"
+
+# Check the accuracy by action_type
+prop.table(table(kobe$action_type, kobe$shot_made_flag),1) -> temp
+as.data.frame.matrix(temp) -> temp
+temp$shot <- rownames(temp)
+ggplot(temp, aes(x = reorder(shot, '1'), y = 1)) +
+geom_point(aes(y = '1'), size = 3, color = " dark blue", stat = "identity") +
+    coord_flip() +
+    labs(y = "Accuracy", x = "", title = "Accuracy by Shot_type")
+
+
+# combined_shot_type vs Accuracy
+pplot(combined_shot_type)
+
+# shot_type vs Accuracy
+pplot(shot_type)
+
+# shot_zone_area vs Accuracy
+pplot(shot_zone_area) + coord_flip()
+
+# shot_zone_basic vs Accuracy
+pplot(shot_zone_basic) + coord_flip()
+
+# seconds_remaining vs Accuracy
+pplot(seconds_remaining)
+
+# shot_distance vs Accuracy
+pplot(shot_distance) + xlim(0, 60)
+
+# season vs Accuracy
+pplot(season) + coord_flip()
+
+# opponent vs Accuracy
+pplot(opponent) + coord_flip()
+
+
+library(caret) # experiment design
+library("e1071") # may be needed for caret
+
+
+# create a formula shot_made_flag ~ combined_shot_type+ shot_zone_range + opponent + shot_zone_area
+formula_text <- paste(names(kobe)[15] ,"~", paste(names(kobe[c(2,19,24,17)]), collapse="+") )
+formula <- as.formula(formula_text)
+
+#  Create a logistic regression model
+fit <- glm(formula,data=kobe,family=binomial())
+
+#split the data
+final_test <- kobe[is.na(kobe$shot_made_flag),]
+temp <- kobe[!is.na(kobe$shot_made_flag),]
+rn_train <- sample(nrow(temp), floor(nrow(temp)*0.8))
+train <- kobe[rn_train,]
+test <- kobe[-rn_train,]
+
+train$shot_made_flag <- as.factor(train$shot_made_flag)
+
+# Check the performance of the logistic regression model and show ROC curve and confusion matrix.
+fit <- lm(formula, data=train)
+test$scores <- predict(fit, type="response", newdata=test)
+
+pred<-prediction(test$scores, test$shot_made_flag)
+
+c <- confusionMatrix(as.integer(test$scores > 0.5), test$shot_made_flag)
+c$table
+
+
+#ROC curve.
+perf<-performance(pred,"tpr","fpr")
+plot(perf, lty=1)
+
+

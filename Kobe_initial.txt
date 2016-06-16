@@ -12,8 +12,9 @@ library("e1071") # may be needed for caret
 
 
 #Import Kaggle data
-kobe <- read_csv("C:/Users/Vince/Desktop/CMTH136/Kobe/data.csv", sep=",")
+kobe <- read.csv("C:/Users/Vince/Desktop/CKME136/Kobe/data.csv", sep=",")
 summary(kobe)
+getwd()
 
 
 # plot the Field goal % by year
